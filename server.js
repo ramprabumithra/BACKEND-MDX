@@ -2,6 +2,9 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const app = express();
+const MongoClient = require('mongodb').MongoClient;
+const ObjectID = require('mongodb').ObjectID;
+
 app.use(express.json());
 app.set('port', 3000);
 
@@ -10,7 +13,9 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use('/lesson-images', express.static(path.join(__dirname, 'lesson-images')));
+app.get('/', (req, res, next) => {
+    res.send('Select a collection, e.g., /collections/Lessons');
+});
 
 app.use('/lesson-images/:imageName', (req, res, next) => {
     const imagePath = path.join(__dirname, 'lesson-images', req.params.imageName);
@@ -30,7 +35,6 @@ app.use((req, res, next) => {
     next();
 });
 
-const MongoClient = require('mongodb').MongoClient;
 let db;
 MongoClient.connect('mongodb+srv://ramprabumithra:ramasita@cluster0.fyuon.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', (err, client) => {
     if (err) {
@@ -41,16 +45,15 @@ MongoClient.connect('mongodb+srv://ramprabumithra:ramasita@cluster0.fyuon.mongod
     console.log('Connected to MongoDB');
 });
 
-app.get('/', (req, res, next) => {
-    res.send('Select a collection, e.g., /collections/Lessons');
-});
-
 app.param('collectionName', (req, res, next, collectionName) => {
     req.collection = db.collection(collectionName);
-    return next();
+    next();
 });
 
 app.get('/collections/:collectionName', (req, res, next) => {
+    if (!req.collection) {
+        return res.status(500).send({ msg: 'Collection not found.' });
+    }
     req.collection.find({}).toArray((e, results) => {
         if (e) return next(e);
         res.send(results);
@@ -58,14 +61,19 @@ app.get('/collections/:collectionName', (req, res, next) => {
 });
 
 app.post('/collections/:collectionName', (req, res, next) => {
+    if (!req.collection) {
+        return res.status(500).send({ msg: 'Collection not found.' });
+    }
     req.collection.insert(req.body, (e, results) => {
         if (e) return next(e);
         res.send(results.ops);
     });
 });
 
-const ObjectID = require('mongodb').ObjectID;
 app.get('/collections/:collectionName/:id', (req, res, next) => {
+    if (!req.collection) {
+        return res.status(500).send({ msg: 'Collection not found.' });
+    }
     req.collection.findOne({ _id: new ObjectID(req.params.id) }, (e, result) => {
         if (e) return next(e);
         res.send(result);
@@ -73,12 +81,14 @@ app.get('/collections/:collectionName/:id', (req, res, next) => {
 });
 
 app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
+    if (!req.collection) {
+        return res.status(500).send({ msg: 'Collection not found.' });
+    }
     req.collection.findOne({ lessonTitle: req.params.lessonTitle }, (err, lesson) => {
         if (err) return next(err);
         if (!lesson) {
             return res.status(404).send({ msg: 'Lesson not found' });
         }
-
         req.collection.update(
             { lessonTitle: req.params.lessonTitle },
             { $set: req.body },
@@ -92,28 +102,23 @@ app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
 });
 
 app.post('/placeOrder', async (req, res) => {
-    const order = req.body; 
+    const order = req.body;
     const lessons = order.lessons;
-
     try {
         for (const lesson of lessons) {
             const Doc = await db.collection('Lessons').findOne({ lessonTitle: lesson.lessonTitle });
             if (!Doc) {
                 return res.status(404).json({ msg: `Lesson ${lesson.lessonTitle} not found.` });
             }
-
             if (Doc.availability < lesson.quantity) {
                 return res.status(400).json({ msg: `Not enough availability for ${lesson.lessonTitle}. Only ${Doc.availability} spots available.` });
             }
-
             await db.collection('Lessons').updateOne(
                 { lessonTitle: lesson.lessonTitle },
                 { $inc: { availability: -lesson.quantity } }
             );
         }
-
         await db.collection('Orders').insertOne(order);
-
         res.status(200).json({ msg: 'Order placed successfully' });
     } catch (error) {
         console.error('Error placing order:', error);
@@ -122,6 +127,9 @@ app.post('/placeOrder', async (req, res) => {
 });
 
 app.delete('/collections/:collectionName/:id', (req, res, next) => {
+    if (!req.collection) {
+        return res.status(500).send({ msg: 'Collection not found.' });
+    }
     req.collection.deleteOne(
         { _id: ObjectID(req.params.id) }, (e, result) => {
             if (e) return next(e);
