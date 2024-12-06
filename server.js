@@ -11,10 +11,19 @@ app.set('port', 3000);
 
 app.use(cors({
     origin: 'https://ramprabumithra.github.io', 
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
+    methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH', 'OPTIONS'], 
     allowedHeaders: ['Content-Type', 'Authorization'], 
     credentials: true, 
 }));
+
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT,PATCH,DELETE");
+    res.setHeader("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
+    next();
+});
+
 
 app.use((req, res, next) => {
     console.log(`${req.method} request for ${req.url} at ${new Date().toISOString()}`);
@@ -125,6 +134,17 @@ app.post('/placeOrder', async (req, res) => {
         console.error('Error placing order:', error);
         res.status(500).json({ msg: 'Failed to place order' });
     }
+});
+
+app.patch('/collections/:collectionName/:id', (req, res) => {
+    req.collection.updateOne(
+        { _id: new ObjectID(req.params.id) },
+        { $set: req.body },
+        (err, result) => {
+            if (err) return res.status(500).send({ msg: 'Error updating resource' });
+            res.send(result.modifiedCount === 1 ? { msg: 'Success' } : { msg: 'Not updated' });
+        }
+    );
 });
 
 app.delete('/collections/:collectionName/:id', (req, res, next) => {
