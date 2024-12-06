@@ -17,16 +17,6 @@ app.get('/', (req, res, next) => {
     res.send('Select a collection, e.g., /collections/Lessons');
 });
 
-app.use('/lesson-images/:imageName', (req, res, next) => {
-    const imagePath = path.join(__dirname, 'lesson-images', req.params.imageName);
-    fs.access(imagePath, fs.constants.F_OK, (err) => {
-        if (err) {
-            return res.status(404).send({ msg: 'Image not found.' });
-        }
-        next();
-    });
-});
-
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader("Access-Control-Allow-Credentials", "true");
