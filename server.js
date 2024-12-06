@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const cors = require('cors');
 const fs = require('fs');
 const app = express();
 const MongoClient = require('mongodb').MongoClient;
@@ -8,6 +9,13 @@ const ObjectID = require('mongodb').ObjectID;
 app.use(express.json());
 app.set('port', 3000);
 
+app.use(cors({
+    origin: 'https://ramprabumithra.github.io', 
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
+    allowedHeaders: ['Content-Type', 'Authorization'], 
+    credentials: true, 
+}));
+
 app.use((req, res, next) => {
     console.log(`${req.method} request for ${req.url} at ${new Date().toISOString()}`);
     next();
@@ -15,6 +23,16 @@ app.use((req, res, next) => {
 
 app.get('/', (req, res, next) => {
     res.send('Select a collection, e.g., /collections/Lessons');
+});
+
+app.use('/lesson-images/:imageName', (req, res, next) => {
+    const imagePath = path.join(__dirname, 'lesson-images', req.params.imageName);
+    fs.access(imagePath, fs.constants.F_OK, (err) => {
+        if (err) {
+            return res.status(404).send({ msg: 'Image not found.' });
+        }
+        next();
+    });
 });
 
 app.use((req, res, next) => {
