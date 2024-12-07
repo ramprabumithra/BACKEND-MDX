@@ -118,7 +118,7 @@ app.patch('/collections/:collectionName/:productId', async (req, res) => {
         const collection = db.collection(collectionName);
 
         // Find the document based on productId
-        const document = await collection.findOne({ productId: productId });
+        const document = await collection.findOne({ productId: _id });
         
         console.log('Found document:', document);  // Log the result of the query
 
