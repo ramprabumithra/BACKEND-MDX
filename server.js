@@ -100,20 +100,34 @@ app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
 });
 
 
-app.put('/collections/:collectionName/:id', (req, res, next) => {
-    const { productId, availability } = req.body;
-    if (!productId || availability === undefined) return res.status(400).json({ msg: 'productId and availability are required.' });
 
-    req.collection.updateOne(
-        { productId: productId.toString() },
-        { $set: { availability } },
-        (e, result) => {
-            if (e) return next(e);
-            if (result.matchedCount === 0) return res.status(404).json({ msg: 'Document not found.' });
-            res.status(200).json({ msg: 'Document updated successfully.' });
+app.patch('/collections/:collectionName/:id', (req, res, next) => {
+    const { availability } = req.body;  // Only availability is needed in the request body
+    if (availability === undefined) {
+        return res.status(400).json({ msg: 'Availability is required.' });
+    }
+
+    // Convert the 'id' parameter to an ObjectId
+    const objectId = new ObjectID(req.params.id);
+
+    req.collection.findOne({ _id: objectId }, (e, result) => { // Match using _id
+        if (e) return next(e);
+        if (!result) {
+            return res.status(404).send({ msg: 'Document not found' });
         }
-    );
+
+        req.collection.updateOne(
+            { _id: objectId },  // Use _id to find the document
+            { $set: { availability } },  // Update the availability field
+            (e, result) => {
+                if (e) return next(e);
+                if (result.matchedCount === 0) return res.status(404).json({ msg: 'Document not found.' });
+                res.status(200).json({ msg: 'Document updated successfully.' });
+            }
+        );
+    });
 });
+
 
 
 app.post('/placeOrder', async (req, res) => {
