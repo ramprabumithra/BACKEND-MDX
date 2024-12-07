@@ -101,39 +101,21 @@ app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
 
 
 
-app.put('/collections/:collectionName/:productId', async (req, res) => {
-    const { collectionName, productId } = req.params;
-    const { availability, name, price, description } = req.body;  // Assuming you may have other fields to update
+app.patch('/collections/:collectionName/:productId', async (req, res) => {
+    if (!req.collection) {
+        return res.status(500).send({ msg: 'Collection not found.' });
+    }
 
-    console.log('Received PUT request');
-    console.log('Collection:', collectionName);
-    console.log('Product ID:', productId);
-    console.log('Availability:', availability);
-    console.log('Name:', name);
-    console.log('Price:', price);
-    console.log('Description:', description);
+    const { productId, availability } = req.body;
 
-    // You might want to check that other fields are present if necessary
-    if (!availability || !name || !price) {
-        return res.status(400).json({ msg: 'Availability, name, and price are required.' });
+    if (!productId || availability === undefined) {
+        return res.status(400).json({ msg: 'productId and availability are required.' });
     }
 
     try {
-        const collection = db.collection(collectionName);
-
-        // Find the document based on productId
-        const document = await collection.findOne({ productId: productId });
-        
-        console.log('Found document:', document);
-
-        if (!document) {
-            return res.status(404).json({ msg: 'Document not found.' });
-        }
-
-        // Update the document (replace the whole document)
-        const result = await collection.updateOne(
-            { productId: productId },  // Match by productId
-            { $set: { availability, name, price, description } }  // Replace the entire document
+        const result = await req.collection.updateOne(
+            { productId: productId }, 
+            { $set: { availability: availability } }
         );
 
         if (result.matchedCount === 0) {
@@ -146,12 +128,6 @@ app.put('/collections/:collectionName/:productId', async (req, res) => {
         res.status(500).json({ msg: 'Internal server error.' });
     }
 });
-
-
-
-
-
-
 
 app.post('/placeOrder', async (req, res) => {
     const order = req.body; 
