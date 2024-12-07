@@ -10,7 +10,7 @@ app.use(express.json());
 app.set('port', process.env.PORT || 3000);
 
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'https://ramprabumithra.github.io',
+    origin:'https://ramprabumithra.github.io',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -44,7 +44,7 @@ app.use((req, res, next) => {
 });
 
 let db;
-MongoClient.connect(process.env.MONGODB_URI, (err, client) => {
+MongoClient.connect('mongodb+srv://ramprabumithra:ramasita@cluster0.fyuon.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', (err, client) => {
     if (err) {
         console.error('Failed to connect to MongoDB:', err);
         process.exit(1);
