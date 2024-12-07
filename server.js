@@ -101,34 +101,34 @@ app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
 
 
 
-app.patch('/collections/:collectionName/:id', (req, res) => {
+app.patch('/collections/:collectionName', async (req, res) => {
     if (!req.collection) {
         return res.status(500).send({ msg: 'Collection not found.' });
     }
 
-    const { id } = req.params;
-    const updateFields = req.body;
+    const { productId, availability } = req.body;
 
-    if (!ObjectID.isValid(id)) {
-        return res.status(400).send({ msg: 'Invalid ObjectID format.' });
+    if (!productId || availability === undefined) {
+        return res.status(400).json({ msg: 'productId and availability are required.' });
     }
 
-    req.collection.updateOne(
-    { _id: id }, 
-    { $set: updateFields },
-    (err, result) => {
-        if (err) {
-            return res.status(500).send({ msg: 'Error updating document.' });
-        }
+    try {
+        const result = await req.collection.updateOne(
+            { productId: productId }, // Match by productId
+            { $set: { availability: availability } }
+        );
 
         if (result.matchedCount === 0) {
-            return res.status(404).send({ msg: 'Document not found.' });
+            return res.status(404).json({ msg: 'Document not found.' });
         }
 
-        res.send({ msg: 'Document updated successfully.' });
+        res.status(200).json({ msg: 'Document updated successfully.' });
+    } catch (error) {
+        console.error('Error updating document:', error);
+        res.status(500).json({ msg: 'Internal server error.' });
     }
-    )
 });
+
 
 
 
