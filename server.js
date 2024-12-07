@@ -134,43 +134,30 @@ app.post('/placeOrder', async (req, res) => {
     }
 });
 
-app.patch('/collections/:collectionName/:id', (req, res) => {
-    if (!req.collection) {
-        return res.status(500).send({ msg: 'Collection not found.' });
-    }
-
-    const updateFields = req.body;
-
-    req.collection.updateOne(
-        { _id: new ObjectID(req.params.id) },
-        { $set: updateFields },
-        (err, result) => {
-            if (err) {
-                console.error('Error updating document:', err);
-                return res.status(500).send({ msg: 'Error updating document.' });
-            }
-            if (result.matchedCount === 0) {
-                return res.status(404).send({ msg: 'Document not found.' });
-            }
-            res.send({ msg: 'Document updated successfully.' });
-        }
-    );
-});
-
 app.patch('/collections/Lessons', async (req, res) => {
     const { id, availability } = req.body;
 
+    if (!id || availability === undefined) {
+        return res.status(400).json({ msg: 'id and availability are required.' });
+    }
+
     try {
-        const updatedProduct = await Product.findByIdAndUpdate(
-            id, 
-            { availability }, 
-            { new: true }
+        const result = await db.collection('Lessons').updateOne(
+            { _id: new ObjectID(id) },
+            { $set: { availability: availability } }
         );
-        res.json(updatedProduct);
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ msg: 'Lesson not found.' });
+        }
+
+        res.status(200).json({ msg: 'Lesson availability updated successfully.' });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to update product' });
+        console.error('Error updating lesson availability:', error);
+        res.status(500).json({ msg: 'Failed to update product availability' });
     }
 });
+
 
 app.delete('/collections/:collectionName/:id', (req, res, next) => {
     if (!req.collection) {
