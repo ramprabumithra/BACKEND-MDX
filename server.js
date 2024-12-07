@@ -100,7 +100,7 @@ app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
 });
 
 
-app.patch('/collections/:collectionName/:id', (req, res, next) => {
+app.put('/collections/:collectionName/:id', (req, res, next) => {
     const { productId, availability } = req.body;
     if (!productId || availability === undefined) return res.status(400).json({ msg: 'productId and availability are required.' });
 
