@@ -101,18 +101,34 @@ app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
 
 
 
-app.patch('/collections/:collectionName/:id', async (req, res) => {
-    const { collectionName, id } = req.params;
-    const { productId, availability } = req.body;
+app.patch('/collections/:collectionName/:productId', async (req, res) => {
+    const { collectionName, productId } = req.params;
+    const { availability } = req.body;
 
-    if (!productId || availability === undefined) {
-        return res.status(400).json({ msg: 'productId and availability are required.' });
+    console.log('Received PATCH request');
+    console.log('Collection:', collectionName);
+    console.log('Product ID:', productId);
+    console.log('Availability:', availability);
+
+    if (!availability) {
+        return res.status(400).json({ msg: 'Availability is required.' });
     }
 
     try {
         const collection = db.collection(collectionName);
+
+        // Find the document based on productId
+        const document = await collection.findOne({ productId: productId });
+        
+        console.log('Found document:', document);  // Log the result of the query
+
+        if (!document) {
+            return res.status(404).json({ msg: 'Document not found.' });
+        }
+
+        // Update the document
         const result = await collection.updateOne(
-            { productId: productId },
+            { productId: productId },  // Match by productId
             { $set: { availability: availability } }
         );
 
@@ -126,6 +142,7 @@ app.patch('/collections/:collectionName/:id', async (req, res) => {
         res.status(500).json({ msg: 'Internal server error.' });
     }
 });
+
 
 
 
