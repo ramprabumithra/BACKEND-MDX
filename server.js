@@ -160,22 +160,15 @@ app.patch('/collections/:collectionName/:id', (req, res) => {
 app.patch('/collections/Lessons', async (req, res) => {
     const { id, availability } = req.body;
 
-    if (!id || availability === undefined) {
-        return res.status(400).json({ msg: 'id and availability are required.' });
-    }
     try {
-        const result = await db.collection('Lessons').updateOne(
-            { _id: new ObjectID(id) },
-            { $set: { availability: availability } }
+        const updatedProduct = await Product.findByIdAndUpdate(
+            id, 
+            { availability }, 
+            { new: true }
         );
-
-        if (result.matchedCount === 0) {
-            return res.status(404).json({ msg: 'Lesson not found.' });
-        }
-
-        res.status(200).json({ msg: 'Lesson availability updated successfully.' });
+        res.json(updatedProduct);
     } catch (error) {
-        res.status(500).json({ msg: 'Internal server error.' });
+        res.status(500).json({ error: 'Failed to update product' });
     }
 });
 
