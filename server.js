@@ -158,7 +158,7 @@ app.patch('/collections/Lessons', async (req, res) => {
     }
 });
 
-console.error('Error updating lesson availability:', error);
+
 
 
 
