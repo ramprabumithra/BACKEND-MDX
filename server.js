@@ -159,6 +159,7 @@ app.patch('/collections/Lessons', async (req, res) => {
 });
 
 
+
 app.delete('/collections/:collectionName/:id', (req, res, next) => {
     if (!req.collection) {
         return res.status(500).send({ msg: 'Collection not found.' });
