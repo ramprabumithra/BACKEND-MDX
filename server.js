@@ -7,7 +7,7 @@ const MongoClient = require('mongodb').MongoClient;
 const ObjectID = require('mongodb').ObjectID;
 
 app.use(express.json());
-app.set('port', process.env.PORT || 3000);
+app.set('port', 3000);
 
 app.use(cors({
     origin:'https://ramprabumithra.github.io',
@@ -157,6 +157,9 @@ app.patch('/collections/Lessons', async (req, res) => {
         res.status(500).json({ msg: 'Failed to update product availability' });
     }
 });
+
+console.error('Error updating lesson availability:', error);
+
 
 
 
