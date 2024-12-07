@@ -114,21 +114,21 @@ app.patch('/collections/:collectionName/:id', (req, res) => {
     }
 
     req.collection.updateOne(
-        { _id: new ObjectID(id) },
-        { $set: updateFields },
-        (err, result) => {
-            if (err) {
-                return res.status(500).send({ msg: 'Error updating document.' });
-            }
-
-            if (result.matchedCount === 0) {
-                return res.status(404).send({ msg: 'Document not found.' });
-            }
-
-            res.send({ msg: 'Document updated successfully.' });
+    { _id: id }, 
+    { $set: updateFields },
+    (err, result) => {
+        if (err) {
+            return res.status(500).send({ msg: 'Error updating document.' });
         }
-    );
-});
+
+        if (result.matchedCount === 0) {
+            return res.status(404).send({ msg: 'Document not found.' });
+        }
+
+        res.send({ msg: 'Document updated successfully.' });
+    }
+);
+
 
 
 app.post('/placeOrder', async (req, res) => {
