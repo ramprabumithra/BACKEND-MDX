@@ -99,28 +99,37 @@ app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
     });
 });
 
+const { ObjectID } = require('mongodb');
+
 app.patch('/collections/:collectionName/:id', (req, res) => {
     if (!req.collection) {
         return res.status(500).send({ msg: 'Collection not found.' });
     }
 
-    const updateFields = req.body; 
+    const { id } = req.params;
+    const updateFields = req.body;
+
+    if (!ObjectID.isValid(id)) {
+        return res.status(400).send({ msg: 'Invalid ObjectID format.' });
+    }
 
     req.collection.updateOne(
-        { _id: new ObjectID(req.params.id) }, 
-        { $set: updateFields }, 
+        { _id: new ObjectID(id) },
+        { $set: updateFields },
         (err, result) => {
             if (err) {
-                console.error('Error updating document:', err);
                 return res.status(500).send({ msg: 'Error updating document.' });
             }
+
             if (result.matchedCount === 0) {
                 return res.status(404).send({ msg: 'Document not found.' });
             }
+
             res.send({ msg: 'Document updated successfully.' });
         }
     );
 });
+
 
 app.post('/placeOrder', async (req, res) => {
     const order = req.body; 
