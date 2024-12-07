@@ -127,7 +127,8 @@ app.patch('/collections/:collectionName/:id', (req, res) => {
 
         res.send({ msg: 'Document updated successfully.' });
     }
-);
+    )
+});
 
 
 
