@@ -111,6 +111,7 @@ app.patch('/collections/:collectionName/:productId', async (req, res) => {
     if (!productId || availability === undefined) {
         return res.status(400).json({ msg: 'productId and availability are required.' });
     }
+    const productIdStr = productId.toString();
 
     try {
         const result = await req.collection.updateOne(
