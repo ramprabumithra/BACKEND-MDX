@@ -124,22 +124,37 @@ app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
 app.post('/placeOrder', async (req, res) => {
     const order = req.body;
     const lessons = order.lessons;
+
     try {
         for (const lesson of lessons) {
+            console.log('Processing lesson:', lesson);
+
             const Doc = await db.collection('Lessons').findOne({ lessonTitle: lesson.lessonTitle });
             if (!Doc) {
+                console.log(`Lesson ${lesson.lessonTitle} not found.`);
                 return res.status(404).json({ msg: `Lesson ${lesson.lessonTitle} not found.` });
             }
+
+            console.log(`Found lesson: ${Doc}`);
             if (Doc.availability < lesson.quantity) {
-                return res.status(400).json({ msg: `Not enough availability for ${lesson.lessonTitle}. Only ${Doc.availability} spots available.` });
+                console.log(`Not enough availability for ${lesson.lessonTitle}`);
+                return res.status(400).json({ 
+                    msg: `Not enough availability for ${lesson.lessonTitle}. Only ${Doc.availability} spots available.` 
+                });
             }
-            await db.collection('Lessons').updateOne(
+
+            const updateResult = await db.collection('Lessons').updateOne(
                 { lessonTitle: lesson.lessonTitle },
                 { $inc: { availability: -lesson.quantity } }
             );
+
+            console.log(`Update result for ${lesson.lessonTitle}:`, updateResult);
         }
-        await db.collection('Orders').insertOne(order);
+
+        const orderResult = await db.collection('Orders').insertOne(order);
+        console.log('Order placed successfully:', orderResult);
         res.status(200).json({ msg: 'Order placed successfully' });
+
     } catch (error) {
         console.error('Error placing order:', error);
         res.status(500).json({ msg: 'Failed to place order' });
