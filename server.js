@@ -7,13 +7,13 @@ const MongoClient = require('mongodb').MongoClient;
 const ObjectID = require('mongodb').ObjectID;
 
 app.use(express.json());
-app.set('port', 3000);
+app.set('port', process.env.PORT || 3000);
 
 app.use(cors({
-    origin: 'https://ramprabumithra.github.io', 
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], 
-    allowedHeaders: ['Content-Type', 'Authorization'], 
-    credentials: true, 
+    origin: process.env.FRONTEND_URL || 'https://ramprabumithra.github.io',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
 }));
 
 app.use((req, res, next) => {
@@ -44,7 +44,7 @@ app.use((req, res, next) => {
 });
 
 let db;
-MongoClient.connect('mongodb+srv://ramprabumithra:ramasita@cluster0.fyuon.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', (err, client) => {
+MongoClient.connect(process.env.MONGODB_URI, (err, client) => {
     if (err) {
         console.error('Failed to connect to MongoDB:', err);
         process.exit(1);
@@ -57,18 +57,6 @@ app.param('collectionName', (req, res, next, collectionName) => {
     req.collection = db.collection(collectionName);
     next();
 });
-
-app.patch('/collections/:collectionName/:id', (req, res) => {
-    req.collection.updateOne(
-        { id: req.params.id }, 
-        { $set: req.body },
-        (err, result) => {
-            if (err) return res.status(500).send({ msg: 'Error updating resource' });
-            res.send(result.modifiedCount === 1 ? { msg: 'Success' } : { msg: 'Not updated' });
-        }
-    );
-});
-
 
 app.get('/collections/:collectionName', (req, res, next) => {
     if (!req.collection) {
@@ -84,7 +72,7 @@ app.post('/collections/:collectionName', (req, res, next) => {
     if (!req.collection) {
         return res.status(500).send({ msg: 'Collection not found.' });
     }
-    req.collection.insert(req.body, (e, results) => {
+    req.collection.insertOne(req.body, (e, results) => {
         if (e) return next(e);
         res.send(results.ops);
     });
@@ -94,7 +82,7 @@ app.get('/collections/:collectionName/:id', (req, res, next) => {
     if (!req.collection) {
         return res.status(500).send({ msg: 'Collection not found.' });
     }
-    req.collection.findOne({ id: req.params.id }, (e, result) => {
+    req.collection.findOne({ _id: new ObjectID(req.params.id) }, (e, result) => {
         if (e) return next(e);
         res.send(result);
     });
@@ -109,13 +97,13 @@ app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
         if (!lesson) {
             return res.status(404).send({ msg: 'Lesson not found' });
         }
-        req.collection.update(
+        req.collection.updateOne(
             { lessonTitle: req.params.lessonTitle },
             { $set: req.body },
             { safe: true, multi: false },
             (e, result) => {
                 if (e) return next(e);
-                res.send((result.result.n === 1) ? { msg: 'success' } : { msg: 'error' });
+                res.send((result.modifiedCount === 1) ? { msg: 'success' } : { msg: 'error' });
             }
         );
     });
@@ -146,17 +134,62 @@ app.post('/placeOrder', async (req, res) => {
     }
 });
 
+app.patch('/collections/:collectionName/:id', (req, res) => {
+    if (!req.collection) {
+        return res.status(500).send({ msg: 'Collection not found.' });
+    }
+
+    const updateFields = req.body;
+
+    req.collection.updateOne(
+        { _id: new ObjectID(req.params.id) },
+        { $set: updateFields },
+        (err, result) => {
+            if (err) {
+                console.error('Error updating document:', err);
+                return res.status(500).send({ msg: 'Error updating document.' });
+            }
+            if (result.matchedCount === 0) {
+                return res.status(404).send({ msg: 'Document not found.' });
+            }
+            res.send({ msg: 'Document updated successfully.' });
+        }
+    );
+});
+
+app.patch('/collections/Lessons', async (req, res) => {
+    const { id, availability } = req.body;
+
+    if (!id || availability === undefined) {
+        return res.status(400).json({ msg: 'id and availability are required.' });
+    }
+    try {
+        const result = await db.collection('Lessons').updateOne(
+            { _id: new ObjectID(id) },
+            { $set: { availability: availability } }
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ msg: 'Lesson not found.' });
+        }
+
+        res.status(200).json({ msg: 'Lesson availability updated successfully.' });
+    } catch (error) {
+        res.status(500).json({ msg: 'Internal server error.' });
+    }
+});
+
 app.delete('/collections/:collectionName/:id', (req, res, next) => {
     if (!req.collection) {
         return res.status(500).send({ msg: 'Collection not found.' });
     }
     req.collection.deleteOne(
-        { id: ObjectID(req.params.id) }, (e, result) => {
+        { _id: new ObjectID(req.params.id) }, (e, result) => {
             if (e) return next(e);
-            res.send((result.result.n === 1) ? { msg: 'success' } : { msg: 'error' });
+            res.send((result.deletedCount === 1) ? { msg: 'success' } : { msg: 'error' });
         });
 });
 
-app.listen(3000, () => {
-    console.log('Express.js server running at localhost:3000');
+app.listen(process.env.PORT || 3000, () => {
+    console.log('Express.js server running');
 });
