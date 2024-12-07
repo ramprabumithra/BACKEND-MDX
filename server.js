@@ -101,11 +101,8 @@ app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
 
 
 
-app.patch('/collections/:collectionName', async (req, res) => {
-    if (!req.collection) {
-        return res.status(500).send({ msg: 'Collection not found.' });
-    }
-
+app.patch('/collections/:collectionName/:id', async (req, res) => {
+    const { collectionName, id } = req.params;
     const { productId, availability } = req.body;
 
     if (!productId || availability === undefined) {
@@ -113,8 +110,9 @@ app.patch('/collections/:collectionName', async (req, res) => {
     }
 
     try {
-        const result = await req.collection.updateOne(
-            { productId: productId }, // Match by productId
+        const collection = db.collection(collectionName);
+        const result = await collection.updateOne(
+            { productId: productId },
             { $set: { availability: availability } }
         );
 
@@ -128,6 +126,7 @@ app.patch('/collections/:collectionName', async (req, res) => {
         res.status(500).json({ msg: 'Internal server error.' });
     }
 });
+
 
 
 
