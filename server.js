@@ -101,24 +101,25 @@ app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
 
 
 
-app.patch('/collections/:collectionName/:id', (req, res, next) => {
-    const { availability } = req.body;  // Only availability is needed in the request body
+app.put('/collections/:collectionName/:id', (req, res, next) => {
+    const { availability } = req.body;
     if (availability === undefined) {
         return res.status(400).json({ msg: 'Availability is required.' });
     }
 
-    // Convert the 'id' parameter to an ObjectId
-    const objectId = new ObjectID(req.params.id);
+    const lessonId = req.params.id;
 
-    req.collection.findOne({ _id: objectId }, (e, result) => { // Match using _id
+    const objectId = new ObjectID(lessonId);
+
+    req.collection.findOne({ id: lessonId }, (e, result) => {
         if (e) return next(e);
         if (!result) {
             return res.status(404).send({ msg: 'Document not found' });
         }
 
         req.collection.updateOne(
-            { _id: objectId },  // Use _id to find the document
-            { $set: { availability } },  // Update the availability field
+            { id: lessonId },
+            { $set: { availability } },
             (e, result) => {
                 if (e) return next(e);
                 if (result.matchedCount === 0) return res.status(404).json({ msg: 'Document not found.' });
@@ -127,6 +128,7 @@ app.patch('/collections/:collectionName/:id', (req, res, next) => {
         );
     });
 });
+
 
 
 
