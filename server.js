@@ -129,6 +129,7 @@ app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
 
 app.get('/search', (req, res, next) => {
     const searchQuery = req.query.query ? req.query.query : ''; // Get the search query from the request
+    const collectionName = req.query.collectionName ? req.query.collectionName : 'Lessons'; // Default collection
 
     if (!searchQuery) {
         return res.status(400).json({ msg: 'No search query provided.' });
@@ -136,7 +137,10 @@ app.get('/search', (req, res, next) => {
 
     const regexQuery = new RegExp(searchQuery, 'i'); // Case-insensitive regex
 
-    req.collection.find({
+    // Dynamically get the collection based on the provided `collectionName`
+    const collection = db.collection(collectionName);
+
+    collection.find({
         $or: [
             { lessonTitle: { $regex: regexQuery } },
             { location: { $regex: regexQuery } },
@@ -144,10 +148,11 @@ app.get('/search', (req, res, next) => {
             { availability: { $regex: regexQuery } }
         ]
     }).toArray((err, results) => {
-        if (err) return next(err);  // Pass the error to the next middleware (error handler)
-        res.json(results);  // Send back the search results
+        if (err) return next(err);
+        res.json(results);
     });
 });
+
 
 app.post('/placeOrder', async (req, res) => {
     const order = req.body; 
