@@ -101,22 +101,23 @@ app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
 
 
 
-app.put('/collections/:collectionName/:id', (req, res, next) => {
-    const { availability } = req.body;
+app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
+    const { availability } = req.body; // Extract availability from request body
     if (availability === undefined) {
         return res.status(400).json({ msg: 'Availability is required.' });
     }
 
-    const lessonId = req.params.id;
+    // Find the lesson by lessonTitle
+    req.collection.findOne({ lessonTitle: req.params.lessonTitle }, (err, lesson) => {
+        if (err) return next(err);
+        if (!lesson) {
+            return res.status(404).send({ msg: 'Lesson not found' });
+        }
 
-    // Query by the custom `id` (not ObjectId)
-    req.collection.findOne({ id: lessonId }, (e, result) => { 
-        if (e) return next(e);
-        if (!result) return res.status(404).send({ msg: 'Document not found' });
-    
+        // Update the availability for the found lesson
         req.collection.updateOne(
-            { id: lessonId },  // Use `id` to find the document
-            { $set: { availability } },
+            { lessonTitle: req.params.lessonTitle },
+            { $set: { availability } }, // Update the availability field
             (e, result) => {
                 if (e) return next(e);
                 if (result.matchedCount === 0) return res.status(404).json({ msg: 'Document not found.' });
