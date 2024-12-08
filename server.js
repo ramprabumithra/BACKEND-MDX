@@ -134,8 +134,7 @@ app.get('/search', (req, res, next) => {
         return res.status(400).json({ msg: 'No search query provided.' });
     }
 
-    // Build the search query for multiple fields
-    const regexQuery = new RegExp(searchQuery, 'i'); 
+    const regexQuery = new RegExp(searchQuery, 'i'); // Case-insensitive regex
 
     req.collection.find({
         $or: [
@@ -145,10 +144,11 @@ app.get('/search', (req, res, next) => {
             { availability: { $regex: regexQuery } }
         ]
     }).toArray((err, results) => {
-        if (err) return next(err);
-        res.json(results);
+        if (err) return next(err);  // Pass the error to the next middleware (error handler)
+        res.json(results);  // Send back the search results
     });
 });
+
 app.post('/placeOrder', async (req, res) => {
     const order = req.body; 
     const lessons = order.lessons;
