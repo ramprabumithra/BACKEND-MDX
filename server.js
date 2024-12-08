@@ -128,30 +128,41 @@ app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
 });
 
 app.get('/search', (req, res, next) => {
-    const searchQuery = req.query.query ? req.query.query : ''; // Get the search query from the request
-    const collectionName = req.query.collectionName ? req.query.collectionName : 'Lessons'; // Default collection
+    const searchQuery = req.query.query ? req.query.query : '';
 
     if (!searchQuery) {
         return res.status(400).json({ msg: 'No search query provided.' });
     }
 
-    const regexQuery = new RegExp(searchQuery, 'i'); // Case-insensitive regex
+    const isNumericQuery = !isNaN(searchQuery);
+    const regexQuery = new RegExp(searchQuery, 'i');
 
-    // Dynamically get the collection based on the provided `collectionName`
-    const collection = db.collection(collectionName);
-
-    collection.find({
+    let query = {
         $or: [
             { lessonTitle: { $regex: regexQuery } },
-            { location: { $regex: regexQuery } },
+            { location: { $regex: regexQuery } }
+        ]
+    };
+
+    if (isNumericQuery) {
+        const numericValue = parseFloat(searchQuery);
+        query.$or.push(
+            { price: numericValue },
+            { availability: numericValue }
+        );
+    } else {
+        query.$or.push(
             { price: { $regex: regexQuery } },
             { availability: { $regex: regexQuery } }
-        ]
-    }).toArray((err, results) => {
+        );
+    }
+
+    req.collection.find(query).toArray((err, results) => {
         if (err) return next(err);
         res.json(results);
     });
 });
+
 
 
 app.post('/placeOrder', async (req, res) => {
