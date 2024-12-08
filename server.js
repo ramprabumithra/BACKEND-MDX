@@ -109,16 +109,13 @@ app.put('/collections/:collectionName/:id', (req, res, next) => {
 
     const lessonId = req.params.id;
 
-    const objectId = new ObjectID(lessonId);
-
-    req.collection.findOne({ id: lessonId }, (e, result) => {
+    // Query by the custom `id` (not ObjectId)
+    req.collection.findOne({ id: lessonId }, (e, result) => { 
         if (e) return next(e);
-        if (!result) {
-            return res.status(404).send({ msg: 'Document not found' });
-        }
-
+        if (!result) return res.status(404).send({ msg: 'Document not found' });
+    
         req.collection.updateOne(
-            { id: lessonId },
+            { id: lessonId },  // Use `id` to find the document
             { $set: { availability } },
             (e, result) => {
                 if (e) return next(e);
@@ -128,6 +125,8 @@ app.put('/collections/:collectionName/:id', (req, res, next) => {
         );
     });
 });
+
+
 
 
 
