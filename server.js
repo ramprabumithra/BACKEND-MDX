@@ -134,34 +134,23 @@ app.get('/search', (req, res, next) => {
         return res.status(400).json({ msg: 'No search query provided.' });
     }
 
-    const isNumericQuery = !isNaN(searchQuery);
-    const regexQuery = new RegExp(searchQuery, 'i');
+    const regexQuery = new RegExp(searchQuery, 'i'); 
 
-    let query = {
+    const query = {
         $or: [
             { lessonTitle: { $regex: regexQuery } },
-            { location: { $regex: regexQuery } }
-        ]
-    };
-
-    if (isNumericQuery) {
-        const numericValue = parseFloat(searchQuery);
-        query.$or.push(
-            { price: numericValue },
-            { availability: numericValue }
-        );
-    } else {
-        query.$or.push(
+            { location: { $regex: regexQuery } },
             { price: { $regex: regexQuery } },
             { availability: { $regex: regexQuery } }
-        );
-    }
+        ]
+    };
 
     req.collection.find(query).toArray((err, results) => {
         if (err) return next(err);
         res.json(results);
     });
 });
+
 
 
 
