@@ -128,28 +128,46 @@ app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
 });
 
 app.get('/search', (req, res, next) => {
-    const searchQuery = req.query.query ? req.query.query : '';
+    const searchQuery = req.query.query ? req.query.query : ''; 
+    const collectionName = req.query.collectionName ? req.query.collectionName : 'Lessons'; 
 
     if (!searchQuery) {
         return res.status(400).json({ msg: 'No search query provided.' });
     }
 
+    // Check if searchQuery is a number
+    const isNumericQuery = !isNaN(searchQuery);
     const regexQuery = new RegExp(searchQuery, 'i'); 
 
-    const query = {
+    // Dynamically get the collection based on the provided `collectionName`
+    const collection = db.collection(collectionName);
+
+    let query = {
         $or: [
             { lessonTitle: { $regex: regexQuery } },
-            { location: { $regex: regexQuery } },
-            { price: { $regex: regexQuery } },
-            { availability: { $regex: regexQuery } }
+            { location: { $regex: regexQuery } }
         ]
     };
 
-    req.collection.find(query).toArray((err, results) => {
+    if (isNumericQuery) {
+        const numericValue = parseFloat(searchQuery);
+        query.$or.push(
+            { price: numericValue },         // Directly match numeric value for price
+            { availability: numericValue }   // Directly match numeric value for availability
+        );
+    } else {
+        query.$or.push(
+            { price: { $regex: regexQuery } },  // Regex search for price (if it's a string)
+            { availability: { $regex: regexQuery } } // Regex search for availability (if it's a string)
+        );
+    }
+
+    collection.find(query).toArray((err, results) => {
         if (err) return next(err);
         res.json(results);
     });
 });
+
 
 
 
