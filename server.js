@@ -127,11 +127,28 @@ app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
     });
 });
 
+app.get('/search', (req, res, next) => {
+    const searchQuery = req.query.query ? req.query.query : ''; // Get the search query from the request
 
+    if (!searchQuery) {
+        return res.status(400).json({ msg: 'No search query provided.' });
+    }
 
+    // Build the search query for multiple fields
+    const regexQuery = new RegExp(searchQuery, 'i'); 
 
-
-
+    req.collection.find({
+        $or: [
+            { lessonTitle: { $regex: regexQuery } },
+            { location: { $regex: regexQuery } },
+            { price: { $regex: regexQuery } },
+            { availability: { $regex: regexQuery } }
+        ]
+    }).toArray((err, results) => {
+        if (err) return next(err);
+        res.json(results);
+    });
+});
 app.post('/placeOrder', async (req, res) => {
     const order = req.body; 
     const lessons = order.lessons;
