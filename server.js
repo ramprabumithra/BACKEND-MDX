@@ -2,16 +2,8 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const app = express();
-const cors = require('cors');
 app.use(express.json());
 app.set('port', 3000);
-
-app.use(cors({
-    origin: 'https://ramprabumithra.github.io', 
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH','OPTIONS'], 
-    allowedHeaders: ['Content-Type', 'Authorization'], 
-    credentials: true, 
-}));
 
 app.use((req, res, next) => {
     console.log(`${req.method} request for ${req.url} at ${new Date().toISOString()}`);
@@ -33,7 +25,7 @@ app.use('/lesson-images/:imageName', (req, res, next) => {
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader("Access-Control-Allow-Credentials", "true");
-    res.setHeader("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT,PATCH");
+    res.setHeader("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT");
     res.setHeader("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
     next();
 });
@@ -67,13 +59,10 @@ app.get('/collections/:collectionName', (req, res, next) => {
 
 app.post('/collections/:collectionName', (req, res, next) => {
     req.collection.insert(req.body, (e, results) => {
-      if (e) return next(e)
-      res.send(results.ops)
-    })
-})
-
-
-
+        if (e) return next(e);
+        res.send(results.ops);
+    });
+});
 
 const ObjectID = require('mongodb').ObjectID;
 app.get('/collections/:collectionName/:id', (req, res, next) => {
@@ -102,98 +91,29 @@ app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
     });
 });
 
-
-
-app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
-    const { availability } = req.body; // Extract availability from request body
-    if (availability === undefined) {
-        return res.status(400).json({ msg: 'Availability is required.' });
-    }
-
-    // Find the lesson by lessonTitle
-    req.collection.findOne({ lessonTitle: req.params.lessonTitle }, (err, lesson) => {
-        if (err) return next(err);
-        if (!lesson) {
-            return res.status(404).send({ msg: 'Lesson not found' });
-        }
-
-        // Update the availability for the found lesson
-        req.collection.updateOne(
-            { lessonTitle: req.params.lessonTitle },
-            { $set: { availability } }, // Update the availability field
-            (e, result) => {
-                if (e) return next(e);
-                if (result.matchedCount === 0) return res.status(404).json({ msg: 'Document not found.' });
-                res.status(200).json({ msg: 'Document updated successfully.' });
-            }
-        );
-    });
-});
-
-app.get('/search', (req, res, next) => {
-    const searchQuery = req.query.query ? req.query.query : ''; 
-    const collectionName = req.query.collectionName ? req.query.collectionName : 'Lessons'; 
-
-    if (!searchQuery) {
-        return res.status(400).json({ msg: 'No search query provided.' });
-    }
-
-    // Check if searchQuery is a number
-    const isNumericQuery = !isNaN(searchQuery);
-    const regexQuery = new RegExp(searchQuery, 'i'); 
-
-    // Dynamically get the collection based on the provided `collectionName`
-    const collection = db.collection(collectionName);
-
-    let query = {
-        $or: [
-            { lessonTitle: { $regex: regexQuery } },
-            { location: { $regex: regexQuery } }
-        ]
-    };
-
-    if (isNumericQuery) {
-        const numericValue = parseFloat(searchQuery);
-        query.$or.push(
-            { price: numericValue },         // Directly match numeric value for price
-            { availability: numericValue }   // Directly match numeric value for availability
-        );
-    } else {
-        query.$or.push(
-            { price: { $regex: regexQuery } },  // Regex search for price (if it's a string)
-            { availability: { $regex: regexQuery } } // Regex search for availability (if it's a string)
-        );
-    }
-
-    collection.find(query).toArray((err, results) => {
-        if (err) return next(err);
-        res.json(results);
-    });
-});
-
-
-
-
-
-
 app.post('/placeOrder', async (req, res) => {
-    const order = req.body;
+    const order = req.body; 
     const lessons = order.lessons;
+
     try {
         for (const lesson of lessons) {
             const Doc = await db.collection('Lessons').findOne({ lessonTitle: lesson.lessonTitle });
             if (!Doc) {
                 return res.status(404).json({ msg: `Lesson ${lesson.lessonTitle} not found.` });
             }
+
             if (Doc.availability < lesson.quantity) {
                 return res.status(400).json({ msg: `Not enough availability for ${lesson.lessonTitle}. Only ${Doc.availability} spots available.` });
             }
+
             await db.collection('Lessons').updateOne(
                 { lessonTitle: lesson.lessonTitle },
                 { $inc: { availability: -lesson.quantity } }
             );
         }
+
         await db.collection('Orders').insertOne(order);
+
         res.status(200).json({ msg: 'Order placed successfully' });
     } catch (error) {
         console.error('Error placing order:', error);
