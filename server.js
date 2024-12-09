@@ -65,43 +65,14 @@ app.get('/collections/:collectionName', (req, res, next) => {
     });
 });
 
-app.post('/placeOrder', async (req, res) => {
-    const order = req.body;
-    
-    // Ensure lessons is an array
-    const lessons = Array.isArray(order.lessons) ? order.lessons : [];
-
-    if (lessons.length === 0) {
-        return res.status(400).json({ msg: 'No lessons found in the order.' });
-    }
-
-    try {
-        // Iterate through the lessons in the order
-        for (const lesson of lessons) {
-            const lessonDoc = await db.collection('Lessons').findOne({ lessonTitle: lesson.lessonTitle });
-            if (!lessonDoc) {
-                return res.status(404).json({ msg: `Lesson ${lesson.lessonTitle} not found.` });
-            }
-
-            if (lessonDoc.availability < lesson.quantity) {
-                return res.status(400).json({ msg: `Not enough availability for ${lesson.lessonTitle}. Only ${lessonDoc.availability} spots available.` });
-            }
-
-            // Update the lesson availability
-            await db.collection('Lessons').updateOne(
-                { lessonTitle: lesson.lessonTitle },
-                { $inc: { availability: -lesson.quantity } }
-            );
-        }
-
-        // Insert the order into the Orders collection
-        await db.collection('Orders').insertOne(order);
-        res.status(200).json({ msg: 'Order placed successfully' });
-    } catch (error) {
-        console.error('Error placing order:', error);
-        res.status(500).json({ msg: 'Failed to place order' });
-    }
+app.post('/collections/:collectionName', (req, res, next) => {
+    const collectionName = req.params.collectionName;
+    req.db.collection(collectionName).insertOne(req.body, (e, result) => {
+        if (e) return next(e);
+        res.send(result);
+    });
 });
+
 
 
 
