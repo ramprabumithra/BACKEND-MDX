@@ -66,12 +66,11 @@ app.get('/collections/:collectionName', (req, res, next) => {
 });
 
 app.post('/collections/:collectionName', (req, res, next) => {
-    const collectionName = req.params.collectionName;
-    req.db.collection(collectionName).insertOne(req.body, (e, result) => {
-        if (e) return next(e);
-        res.send(result);
-    });
-});
+    req.collection.insert(req.body, (e, results) => {
+      if (e) return next(e)
+      res.send(results.ops)
+    })
+})
 
 
 
