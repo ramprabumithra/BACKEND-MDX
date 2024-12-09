@@ -65,16 +65,29 @@ app.get('/collections/:collectionName', (req, res, next) => {
     });
 });
 
-app.post('/collections/:collectionName', (req, res, next) => {
-   
-    const documents = Array.isArray(req.body) ? req.body : [req.body];
-
-    req.collection.insertMany(documents, (err, result) => {
-        if (err) {
-            return next(err);
+app.post('/placeOrder', async (req, res) => {
+    const order = req.body;
+    const lessons = order.lessons;
+    try {
+        for (const lesson of lessons) {
+            const Doc = await db.collection('Lessons').findOne({ lessonTitle: lesson.lessonTitle });
+            if (!Doc) {
+                return res.status(404).json({ msg: `Lesson ${lesson.lessonTitle} not found.` });
+            }
+            if (Doc.availability < lesson.quantity) {
+                return res.status(400).json({ msg: `Not enough availability for ${lesson.lessonTitle}. Only ${Doc.availability} spots available.` });
+            }
+            await db.collection('Lessons').updateOne(
+                { lessonTitle: lesson.lessonTitle },
+                { $inc: { availability: -lesson.quantity } }
+            );
         }
-        res.status(200).send(result.ops);  
-    });
+        await db.collection('Orders').insertOne(order);
+        res.status(200).json({ msg: 'Order placed successfully' });
+    } catch (error) {
+        console.error('Error placing order:', error);
+        res.status(500).json({ msg: 'Failed to place order' });
+    }
 });
 
 
