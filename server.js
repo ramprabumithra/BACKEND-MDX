@@ -172,29 +172,25 @@ app.get('/search', (req, res, next) => {
 
 
 
-app.post('/placeOrder', async (req, res) => {
-    const order = req.body; 
-    const lessons = order.lessons;
 
+app.post('/placeOrder', async (req, res) => {
+    const order = req.body;
+    const lessons = order.lessons;
     try {
         for (const lesson of lessons) {
             const Doc = await db.collection('Lessons').findOne({ lessonTitle: lesson.lessonTitle });
             if (!Doc) {
                 return res.status(404).json({ msg: `Lesson ${lesson.lessonTitle} not found.` });
             }
-
             if (Doc.availability < lesson.quantity) {
                 return res.status(400).json({ msg: `Not enough availability for ${lesson.lessonTitle}. Only ${Doc.availability} spots available.` });
             }
-
             await db.collection('Lessons').updateOne(
                 { lessonTitle: lesson.lessonTitle },
                 { $inc: { availability: -lesson.quantity } }
             );
         }
-
         await db.collection('Orders').insertOne(order);
-
         res.status(200).json({ msg: 'Order placed successfully' });
     } catch (error) {
         console.error('Error placing order:', error);
