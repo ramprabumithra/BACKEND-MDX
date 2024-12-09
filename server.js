@@ -66,11 +66,17 @@ app.get('/collections/:collectionName', (req, res, next) => {
 });
 
 app.post('/collections/:collectionName', (req, res, next) => {
-    req.collection.insert(req.body, (e, results) => {
-        if (e) return next(e);
-        res.send(results.ops);
+   
+    const documents = Array.isArray(req.body) ? req.body : [req.body];
+
+    req.collection.insertMany(documents, (err, result) => {
+        if (err) {
+            return next(err);
+        }
+        res.status(200).send(result.ops);  
     });
 });
+
 
 const ObjectID = require('mongodb').ObjectID;
 app.get('/collections/:collectionName/:id', (req, res, next) => {
