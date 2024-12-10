@@ -102,22 +102,22 @@ app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
 
 
 app.put('/collections/:collectionName/:lessonTitle', (req, res, next) => {
-    const { availability } = req.body; // Extract availability from request body
+    const { availability } = req.body; 
     if (availability === undefined) {
         return res.status(400).json({ msg: 'Availability is required.' });
     }
 
-    // Find the lesson by lessonTitle
+    
     req.collection.findOne({ lessonTitle: req.params.lessonTitle }, (err, lesson) => {
         if (err) return next(err);
         if (!lesson) {
             return res.status(404).send({ msg: 'Lesson not found' });
         }
 
-        // Update the availability for the found lesson
+        
         req.collection.updateOne(
             { lessonTitle: req.params.lessonTitle },
-            { $set: { availability } }, // Update the availability field
+            { $set: { availability } }, 
             (e, result) => {
                 if (e) return next(e);
                 if (result.matchedCount === 0) return res.status(404).json({ msg: 'Document not found.' });
@@ -135,11 +135,11 @@ app.get('/search', (req, res, next) => {
         return res.status(400).json({ msg: 'No search query provided.' });
     }
 
-    // Check if searchQuery is a number
+    
     const isNumericQuery = !isNaN(searchQuery);
     const regexQuery = new RegExp(searchQuery, 'i'); 
 
-    // Dynamically get the collection based on the provided `collectionName`
+    
     const collection = db.collection(collectionName);
 
     let query = {
@@ -152,13 +152,13 @@ app.get('/search', (req, res, next) => {
     if (isNumericQuery) {
         const numericValue = parseFloat(searchQuery);
         query.$or.push(
-            { price: numericValue },         // Directly match numeric value for price
-            { availability: numericValue }   // Directly match numeric value for availability
+            { price: numericValue },         
+            { availability: numericValue }   
         );
     } else {
         query.$or.push(
-            { price: { $regex: regexQuery } },  // Regex search for price (if it's a string)
-            { availability: { $regex: regexQuery } } // Regex search for availability (if it's a string)
+            { price: { $regex: regexQuery } },  
+            { availability: { $regex: regexQuery } } 
         );
     }
 
